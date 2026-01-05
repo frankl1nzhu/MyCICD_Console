@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>CI/CD Dashboard</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px;
+            background-color: #f4f7f6;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .btn-login {
+            background: #24292e;
+        }
+
+        .btn-deploy {
+            background: #28a745;
+        }
+
+        .btn-logout {
+            background: #dc3545;
+            float: right;
+        }
+
+        .log-window {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            padding: 15px;
+            height: 300px;
+            overflow-y: scroll;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        .log-entry {
+            margin: 5px 0;
+            border-bottom: 1px solid #333;
+            padding-bottom: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🚀 Secure Cloud CI/CD Pipeline</h1>
+
+    {% if user %}
+    <div class="card">
+        <a href="/logout" class="btn btn-logout">Logout</a>
+        <h2>👋 Welcome, {{ user }}</h2>
+        <p>Role: <strong>ADMIN</strong> <span style="color:gray; font-size:0.8em">(Authorized)</span></p>
+
+        <hr>
+
+        <h3>Backend Pipeline</h3>
+        <p>Target: <strong>Production Server (Port 8080)</strong></p>
+        <button onclick="deployBackend()" class="btn btn-deploy">Deploy Backend</button>
+
+        <hr>
+        
+        <h3>Frontend Pipeline</h3>
+        <p>Target: <strong>Production Server (Port 3000)</strong></p>
+        <button onclick="deployFrontend()" class="btn btn-deploy" style="background-color: #007bff;">Deploy Frontend</button>
+
+        <div id="status-msg" style="margin-top:10px; font-weight:bold;"></div>
+
+        <div class="log-window" id="log-container">
+            <div class="log-entry">[SYSTEM] Ready to deploy...</div>
+            {% for log in logs %}
+            <div class="log-entry">{{ log }}</div>
+            {% endfor %}
+        </div>
+    </div>
+    {% else %}
+    <div class="card" style="text-align: center;">
+        <p>Access restricted. Please authenticate to continue.</p>
+        <a href="/login" class="btn btn-login">Login with GitHub</a>
+    </div>
+    {% endif %}
+
+    <script>
+        function deployBackend() {
+            const statusDiv = document.getElementById('status-msg');
+            statusDiv.innerText = "⏳ Requesting deployment...";
+            statusDiv.style.color = "orange";
+
+            fetch('/deploy/backend', { method: 'POST' })
+                .then(response => {
+                    if (response.ok) {
+                        statusDiv.innerText = "🚀 Deployment started! Watching logs...";
+                        statusDiv.style.color = "green";
+                        startPollingLogs();
+                    } else {
+                        statusDiv.innerText = "❌ Error starting deployment.";
+                        statusDiv.style.color = "red";
+                    }
+                });
+    }
+
+        function deployFrontend() {
+                const statusDiv = document.getElementById('status-msg');
+                statusDiv.innerText = "⏳ Requesting Frontend deployment...";
+                statusDiv.style.color = "orange";
+
+                fetch('/deploy/frontend', { method: 'POST' })
+                    .then(response => {
+                        if (response.ok) {
+                            statusDiv.innerText = "🚀 Frontend Deployment started! Watching logs...";
+                            statusDiv.style.color = "blue";
+                            startPollingLogs();
+                        } else {
+                            statusDiv.innerText = "❌ Error starting deployment.";
+                            statusDiv.style.color = "red";
+                        }
+                    });
+        }
+
+        function startPollingLogs() {
+            // Fetch logs every 2 seconds
+            const interval = setInterval(() => {
+                fetch('/logs')
+                    .then(res => res.json())
+                    .then(data => {
+                        const container = document.getElementById('log-container');
+                        container.innerHTML = ""; // Clear and redraw
+                        data.logs.forEach(log => {
+                            const div = document.createElement('div');
+                            div.className = 'log-entry';
+                            div.innerText = log;
+                            container.appendChild(div);
+                        });
+                        // Auto-scroll to bottom
+                        container.scrollTop = container.scrollHeight;
+
+                        // Simple check: if Success or Error appears, stop polling (simplified here to keep polling)
+                    });
+            }, 2000);
+        }
+    </script>
+</body>
+
+</html>
